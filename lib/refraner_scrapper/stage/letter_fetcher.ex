@@ -3,17 +3,23 @@ defmodule RefranerScrapper.Stage.LetterFetcher do
 
   alias RefranerScrapper.Client
 
-  @letters Enum.map(?A..?Z, &<<&1::utf8>>)
+  require Logger
+
+  # @letters Enum.map(?A..?Z, &<<&1::utf8>>)
+  @letters ["A"]
 
   def start_link(_) do
     GenStage.start_link(__MODULE__, @letters, name: __MODULE__)
   end
 
   def init(letters) do
+    Logger.info("Starting #{__MODULE__}")
     {:producer, letters}
   end
 
   def handle_demand(demand, letters) do
+    Logger.info("[#{__MODULE__}] handle_demand/2 -> #{inspect(demand)}")
+
     demand_letters = Enum.take(letters, demand)
 
     %{events: events, retry_letters: retry_letters} = get_htmls(demand_letters)
@@ -29,9 +35,10 @@ defmodule RefranerScrapper.Stage.LetterFetcher do
     {events, errors} =
       letters
       |> Enum.map(&create_task/1)
-      |> Task.yield_many()
+      |> Task.await_many()
       |> Enum.split_with(&splitter/1)
 
+    events = Enum.map(events, &elem(&1, 1))
     retry_letters = Enum.map(errors, &elem(&1, 1))
 
     %{events: events, retry_letters: retry_letters}

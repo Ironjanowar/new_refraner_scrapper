@@ -5,11 +5,14 @@ defmodule RefranerScrapper.Application do
 
   use Application
 
+  alias RefranerScrapper.Stage.{LetterFetcher, LetterScrapper, SupervisorRefranScrapper}
+
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: RefranerScrapper.Worker.start_link(arg)
-      # {RefranerScrapper.Worker, arg}
+      LetterFetcher,
+      LetterScrapper,
+      SupervisorRefranScrapper
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
